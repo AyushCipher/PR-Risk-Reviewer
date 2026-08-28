@@ -4,12 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.services.heuristics import run_heuristics
 from app.services.llm_explainer import explain_flags
-
-# Placeholder fetcher until the real GitHub fetcher lands - swap this single
-# import for `from app.services.github_fetcher import fetch_pr_data` once
-# that module is available. Its return shape matches this one exactly, so
-# nothing else in this file needs to change.
-from app.services.mock_fetch_pr import fetch_pr_data
+from app.services.github_fetcher import PRFetchError, fetch_pr_data
 
 router = APIRouter()
 
@@ -26,8 +21,8 @@ def _compute_overall_risk_score(flags: list[dict]) -> int:
 def analyze_pr(url: str = Query(..., description="GitHub PR URL")):
     try:
         pr_data = fetch_pr_data(url)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except PRFetchError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
     files = pr_data.get("files", [])
     heuristic_flags = run_heuristics(files)
