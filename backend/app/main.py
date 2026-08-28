@@ -1,7 +1,10 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import analyze_pr, fetch_pr
+
+load_dotenv()
 
 app = FastAPI(title="PR Risk Reviewer")
 
