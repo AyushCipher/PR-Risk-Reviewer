@@ -41,10 +41,12 @@ _CONFIG_FILENAME_RE = re.compile(
     re.IGNORECASE,
 )
 
-_SECRET_RE = re.compile(
-    r"(api[_-]?key|secret|token|password|passwd|access[_-]?key)\s*[:=]\s*"
-    r"['\"]?[A-Za-z0-9_\-/+=]{16,}['\"]?",
-    re.IGNORECASE,
+_SECRET_KEYWORD_RE = re.compile(
+    r"(api[_-]?key|secret|token|password|passwd|access[_-]?key)", re.IGNORECASE
+)
+_SECRET_ASSIGNMENT_RE = re.compile(
+    r"^['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*[:=]\s*"
+    r"['\"]?([A-Za-z0-9_\-/+=]{16,})['\"]?,?\s*$"
 )
 
 _FUNC_DEF_RE = re.compile(
@@ -150,13 +152,13 @@ def check_hardcoded_secret(file: FileEntry) -> list[Flag]:
     flags: list[Flag] = []
 
     for index, line in _added_content_lines(patch):
-        match = _SECRET_RE.search(line)
-        if match:
+        match = _SECRET_ASSIGNMENT_RE.match(line.strip())
+        if match and _SECRET_KEYWORD_RE.search(match.group(1)):
             flags.append({
                 "file": filename,
                 "hunk": _excerpt(patch, index),
                 "tag": "hardcoded_secret",
-                "matched_reason": f"diff line looks like a hardcoded credential: {match.group(0)[:40]}",
+                "matched_reason": f"diff line looks like a hardcoded credential: {match.group(1)}=...",
             })
     return flags
 

@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import analyze_pr
+
 app = FastAPI(title="PR Risk Reviewer")
 
 app.add_middleware(
@@ -9,6 +11,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(analyze_pr.router)
 
 
 @app.get("/health")
