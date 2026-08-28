@@ -3,6 +3,8 @@ import PrUrlForm from "./components/PrUrlForm";
 import LoadingState from "./components/LoadingState";
 import EmptyState from "./components/EmptyState";
 import ErrorState from "./components/ErrorState";
+import RiskScoreBadge from "./components/RiskScoreBadge";
+import FlagList from "./components/FlagList";
 import { analyzePr } from "./api";
 
 export default function App() {
@@ -40,9 +42,26 @@ export default function App() {
           {status === "loading" && <LoadingState />}
           {status === "error" && <ErrorState message={error} />}
           {status === "success" && result && (
-            <pre className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-700">
-              {JSON.stringify(result, null, 2)}
-            </pre>
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <RiskScoreBadge score={result.overall_risk_score} />
+                <a
+                  href={result.pr_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-slate-500 hover:text-slate-700 hover:underline"
+                >
+                  {result.pr_url}
+                </a>
+              </div>
+              {result.flags.length === 0 ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-8 text-center text-sm text-emerald-800">
+                  No risky changes detected in this pull request.
+                </div>
+              ) : (
+                <FlagList flags={result.flags} />
+              )}
+            </div>
           )}
         </div>
       </div>
