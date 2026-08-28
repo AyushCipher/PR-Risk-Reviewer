@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from app.services.heuristics import Flag
 
-_MODEL_NAME = "gemini-1.5-flash"
+_MODEL_NAME = "gemini-3.6-flash"
 _VALID_SEVERITIES = {"low", "medium", "high"}
 
 _PROMPT_TEMPLATE = """You are reviewing one flagged change from a pull request diff.
