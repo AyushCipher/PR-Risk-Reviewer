@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "./config";
 
-const REQUEST_TIMEOUT_MS = 20000;
+const REQUEST_TIMEOUT_MS = 45000;
 
 export async function analyzePr(prUrl) {
   const controller = new AbortController();
