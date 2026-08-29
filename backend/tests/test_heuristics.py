@@ -13,6 +13,30 @@ from app.services.heuristics import (
 )
 
 
+def test_auth_change_by_filename_includes_full_hunk_beyond_eight_lines():
+    # Regression test: a real diff on this shape (jpadilla/pyjwt#1192) was
+    # truncated to 8 lines, cutting off the `raise` that made the original
+    # LLM explanation wrong - it looked like validation had been removed
+    # when it had only been restructured.
+    patch = (
+        "@@ -426,9 +426,10 @@ def _validate_required_claims(\n"
+        "        payload: dict[str, Any],\n"
+        "        claims: Iterable[str],\n"
+        "    ) -> None:\n"
+        "-        for claim in claims:\n"
+        "-            if payload.get(claim) is None:\n"
+        "-                raise MissingRequiredClaimError(claim)\n"
+        "+        missing_claims = [claim for claim in claims if payload.get(claim) is None]\n"
+        "+\n"
+        "+        if missing_claims:\n"
+        "+            raise MissingRequiredClaimError(missing_claims[0], missing_claims)\n"
+    )
+    file = {"filename": "jwt/api_jwt.py", "patch": patch}
+    flags = check_auth_change(file)
+    assert len(flags) == 1
+    assert "raise MissingRequiredClaimError(missing_claims[0]" in flags[0]["hunk"]
+
+
 def test_auth_change_by_filename():
     file = {"filename": "backend/app/auth/middleware.py", "patch": "@@ -0,0 +1,3 @@\n+def check(): pass\n"}
     flags = check_auth_change(file)

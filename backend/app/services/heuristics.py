@@ -80,7 +80,7 @@ def _excerpt(patch: str, index: int, context: int = 2) -> str:
     return "\n".join(lines[start:end])
 
 
-def _first_hunk(patch: str, max_lines: int = 8) -> str:
+def _first_hunk(patch: str, max_lines: int = 60) -> str:
     return "\n".join(_patch_lines(patch)[:max_lines])
 
 
