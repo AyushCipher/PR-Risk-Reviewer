@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import TypedDict
 
 from app.services.heuristics import Flag
 
 _MODEL_NAME = "gemini-3.6-flash"
 _VALID_SEVERITIES = {"low", "medium", "high"}
+_MAX_WORKERS = 5
 
 _PROMPT_TEMPLATE = """You are reviewing one flagged change from a pull request diff.
 Flag category: {tag}
@@ -89,10 +91,8 @@ def explain_flags(flags: list[Flag]) -> list[Explanation]:
     except Exception:
         model = None
 
-    results = []
-    for flag in flags:
-        if model is None:
-            results.append(_fallback_explanation(flag))
-        else:
-            results.append(explain_flag(flag, model=model))
-    return results
+    if model is None:
+        return [_fallback_explanation(flag) for flag in flags]
+
+    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(flags))) as executor:
+        return list(executor.map(lambda flag: explain_flag(flag, model=model), flags))
