@@ -41,8 +41,6 @@ jobs:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/pr_reviews_test
       REDIS_URL: redis://localhost:6379/0
       SESSION_SECRET_KEY: ci-test-secret-key-not-used-in-prod
-      # GEMINI_API_KEY is intentionally NOT set — tests use fallback explanations
-      # GITHUB_TOKEN is intentionally NOT set — e2e tests are excluded in CI
 
     steps:
       - uses: actions/checkout@v4
@@ -94,6 +92,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create .env from template for CI validation
+        run: cp backend/.env.example backend/.env
 
       - name: Validate docker-compose.yml syntax
         run: docker compose config --quiet

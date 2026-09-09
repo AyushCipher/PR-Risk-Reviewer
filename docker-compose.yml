@@ -35,7 +35,8 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/pr_reviews
       REDIS_URL: redis://redis:6379/0
@@ -54,7 +55,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/pr_reviews
       REDIS_URL: redis://redis:6379/0
