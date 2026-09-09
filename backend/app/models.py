@@ -18,10 +18,12 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    github_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
+    github_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True, index=True)
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     login: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    access_token: Mapped[str] = mapped_column(Text, nullable=False)
+    access_token: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_now, nullable=False
     )
@@ -32,6 +34,7 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User login={self.login!r}>"
+
 
 
 class Analysis(Base):

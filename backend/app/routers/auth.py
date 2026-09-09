@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 from typing import Optional
 from urllib.parse import urlencode
@@ -17,12 +15,25 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+
+# GitHub OAuth URLs
 _GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 _GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
 _GITHUB_USER_URL = "https://api.github.com/user"
 
+# Google OAuth URLs
+_GOOGLE_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+
+
+# ── GitHub OAuth ─────────────────────────────────────────────────────────────
 
 @router.get("/github")
 def github_login():
@@ -34,7 +45,7 @@ def github_login():
         )
     params = urlencode({
         "client_id": GITHUB_CLIENT_ID,
-        "scope": "read:user repo",  # repo scope allows access to private PRs
+        "scope": "read:user repo",
     })
     return RedirectResponse(f"{_GITHUB_AUTHORIZE_URL}?{params}")
 
@@ -45,15 +56,10 @@ def github_callback(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """
-    GitHub sends the user back here with a temporary `code`.
-    We exchange it for an access token, fetch the user's GitHub profile,
-    and upsert a User row in Postgres. The user_id is stored in the session cookie.
-    """
+    """Handles GitHub OAuth callback, upserts User in DB, and sets session cookie."""
     if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
         raise HTTPException(status_code=503, detail="GitHub OAuth is not configured.")
 
-    # 1. Exchange code for access token
     with httpx.Client() as client:
         token_resp = client.post(
             _GITHUB_TOKEN_URL,
@@ -69,7 +75,6 @@ def github_callback(
     if not access_token:
         raise HTTPException(status_code=400, detail="GitHub OAuth failed: no access token returned.")
 
-    # 2. Fetch GitHub user profile
     with httpx.Client() as client:
         user_resp = client.get(
             _GITHUB_USER_URL,
@@ -82,7 +87,6 @@ def github_callback(
         raise HTTPException(status_code=502, detail="Failed to fetch GitHub user profile.")
     gh_user = user_resp.json()
 
-    # 3. Upsert User in Postgres
     user = db.query(User).filter(User.github_id == gh_user["id"]).first()
     if user:
         user.login = gh_user.get("login", user.login)
@@ -99,12 +103,102 @@ def github_callback(
     db.commit()
     db.refresh(user)
 
-    # 4. Store user_id in the signed session cookie
     request.session["user_id"] = str(user.id)
-
-    # 5. Redirect back to the frontend
     return RedirectResponse(FRONTEND_URL)
 
+
+# ── Google OAuth ─────────────────────────────────────────────────────────────
+
+@router.get("/google")
+def google_login():
+    """Redirect the browser to Google's OAuth 2.0 authorization page."""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=503,
+            detail="Google OAuth is not configured. Set GOOGLE_CLIENT_ID in your .env file.",
+        )
+    redirect_uri = f"{BACKEND_URL}/auth/google/callback"
+    params = urlencode({
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "select_account",
+    })
+    return RedirectResponse(f"{_GOOGLE_AUTHORIZE_URL}?{params}")
+
+
+@router.get("/google/callback")
+def google_callback(
+    code: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Handles Google OAuth callback, upserts User in DB, and sets session cookie."""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=503, detail="Google OAuth is not configured.")
+
+    redirect_uri = f"{BACKEND_URL}/auth/google/callback"
+
+    with httpx.Client() as client:
+        token_resp = client.post(
+            _GOOGLE_TOKEN_URL,
+            data={
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+            },
+            headers={"Accept": "application/json"},
+        )
+    token_data = token_resp.json()
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Google OAuth token exchange failed.")
+
+    with httpx.Client() as client:
+        userinfo_resp = client.get(
+            _GOOGLE_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    if userinfo_resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch Google userinfo.")
+    google_user = userinfo_resp.json()
+
+    sub = google_user.get("sub")
+    email = google_user.get("email")
+    name = google_user.get("name") or (email.split("@")[0] if email else "Google User")
+    picture = google_user.get("picture")
+
+    user = db.query(User).filter(User.google_id == sub).first()
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+
+    if user:
+        user.google_id = sub
+        user.email = email
+        user.login = name
+        user.avatar_url = picture or user.avatar_url
+        user.access_token = access_token
+    else:
+        user = User(
+            google_id=sub,
+            email=email,
+            login=name,
+            avatar_url=picture,
+            access_token=access_token,
+        )
+        db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    request.session["user_id"] = str(user.id)
+    return RedirectResponse(FRONTEND_URL)
+
+
+# ── Profile & Session ────────────────────────────────────────────────────────
 
 @router.get("/me")
 def get_me(current_user: Optional[User] = Depends(get_current_user)):
@@ -115,6 +209,7 @@ def get_me(current_user: Optional[User] = Depends(get_current_user)):
         "id": str(current_user.id),
         "login": current_user.login,
         "avatar_url": current_user.avatar_url,
+        "email": current_user.email,
     }
 
 

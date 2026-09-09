@@ -86,7 +86,12 @@ export function loginWithGitHub() {
   window.location.href = `${API_BASE_URL}/auth/github`;
 }
 
+export function loginWithGoogle() {
+  window.location.href = `${API_BASE_URL}/auth/google`;
+}
+
 export async function logout() {
+
   await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
     credentials: "include",
