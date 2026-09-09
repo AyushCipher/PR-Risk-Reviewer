@@ -114,8 +114,10 @@ async def test_analyze_pr_risk_score_capped_at_100(monkeypatch, client):
 
 
 # --- End-to-end tests against real, small, public GitHub PRs ---
+# These tests hit the real GitHub API and are excluded from CI with -m "not e2e".
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_analyze_pr_end_to_end_real_pr_with_added_file(monkeypatch, client):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
@@ -131,6 +133,7 @@ async def test_analyze_pr_end_to_end_real_pr_with_added_file(monkeypatch, client
     assert isinstance(body["flags"], list)
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_analyze_pr_end_to_end_real_pr_with_modified_file(monkeypatch, client):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
@@ -143,6 +146,7 @@ async def test_analyze_pr_end_to_end_real_pr_with_modified_file(monkeypatch, cli
     assert isinstance(response.json()["flags"], list)
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_analyze_pr_end_to_end_real_pr_with_no_file_changes(monkeypatch, client):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
@@ -157,6 +161,7 @@ async def test_analyze_pr_end_to_end_real_pr_with_no_file_changes(monkeypatch, c
     assert body["overall_risk_score"] == 0
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_analyze_pr_end_to_end_nonexistent_pr_returns_404(client):
     async with client:

@@ -4,4 +4,22 @@ pydantic==2.9.2
 python-dotenv==1.0.1
 httpx==0.27.2
 google-generativeai==0.8.3
+
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.9
+alembic==1.13.2
+
+# Async queue
+celery==5.4.0
+redis==5.0.8
+
+# Auth / session
+itsdangerous==2.2.0
+
+# Rate limiting
+slowapi==0.1.9
+
+# Testing
 pytest==8.3.3
+pytest-asyncio==0.24.0

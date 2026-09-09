@@ -9,3 +9,12 @@ build/
 .pytest_cache/
 *.egg-info/
 PR-Risk-Reviewer-Prompts.md
+
+# Database
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Docker
+.docker/

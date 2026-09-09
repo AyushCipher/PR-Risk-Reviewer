@@ -31,8 +31,10 @@ def test_parse_pr_url_not_a_pull_request_link_raises():
 
 
 # --- Integration tests against real, small, public PRs (network required) ---
+# These tests hit the real GitHub API. Run them locally but not in CI.
 
 
+@pytest.mark.e2e
 def test_fetch_real_pr_with_single_added_file():
     data = fetch_pr_data("https://github.com/octocat/Hello-World/pull/11023")
     assert data["repo"] == "octocat/Hello-World"
@@ -43,6 +45,7 @@ def test_fetch_real_pr_with_single_added_file():
     assert data["files"][0]["status"] == "added"
 
 
+@pytest.mark.e2e
 def test_fetch_real_pr_with_modified_file():
     data = fetch_pr_data("https://github.com/octocat/Spoon-Knife/pull/41111")
     assert data["repo"] == "octocat/Spoon-Knife"
@@ -50,16 +53,19 @@ def test_fetch_real_pr_with_modified_file():
     assert "index.html" in filenames
 
 
+@pytest.mark.e2e
 def test_fetch_real_pr_with_no_file_changes():
     data = fetch_pr_data("https://github.com/octocat/Hello-World/pull/11005")
     assert data["pr_number"] == 11005
     assert data["files"] == []
 
 
+@pytest.mark.e2e
 def test_fetch_nonexistent_pr_raises_404():
     with pytest.raises(PRFetchError) as exc_info:
         fetch_pr_data("https://github.com/octocat/Hello-World/pull/999999")
     assert exc_info.value.status_code == 404
+
 
 
 # --- Hardening: simulated failure modes (no live network needed) ---
