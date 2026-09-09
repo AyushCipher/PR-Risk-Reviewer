@@ -9,6 +9,8 @@
 ![Redis](https://img.shields.io/badge/Redis-7-red)
 ![Docker](https://img.shields.io/badge/docker-compose-blue)
 
+> **About**: Enterprise-grade AI Pull Request Risk Reviewer & Code Review Copilot built with FastAPI, Gemini Function Calling, RAG vector retrieval, Celery/Redis async queue, PostgreSQL 16 with Alembic, and real-time SSE streaming.
+
 Flags risky pull requests before they merge — auth changes, DB migrations, config/secret changes, missing tests — using deterministic, unit-tested rules plus **Retrieval-Augmented Generation (RAG)** and a **Gemini Function Calling** explanation pass. Not a generic AI summarizer: every flag traces back to a specific, testable rule, and the LLM only reasons over grounded diffs and semantically retrieved codebase context.
 
 Each flag includes:
@@ -159,6 +161,12 @@ pytest --tb=short -v
 | `DATABASE_URL` | Yes | `postgresql+psycopg2://postgres:postgres@localhost:5432/pr_reviews` | PostgreSQL connection string. |
 | `REDIS_URL` | Yes | `redis://localhost:6379/0` | Redis connection URL for task queue, pub/sub, and caching. |
 | `SESSION_SECRET_KEY` | Yes | `(insecure default)` | 32-character string for signing session cookies. |
+
+---
+
+## 🏷️ Topics & Tags
+
+`fastapi` • `google-gemini` • `rag` • `function-calling` • `celery` • `redis` • `postgresql` • `docker` • `react` • `code-review` • `llm-observability` • `server-sent-events` • `github-actions` • `python` • `tailwind-css` • `alembic` • `oauth2`
 
 ---
 
